@@ -1,4 +1,4 @@
-name: Build ShareX
+name: Build ShareXwing
 
 on:
   push:
@@ -74,6 +74,25 @@ jobs:
 
       - name: Build
         run: dotnet build --no-restore --configuration "${{ matrix.configuration }}" --self-contained true /m:1 "${{ env.SOLUTION_FILE_PATH }}"
+
+      - name: Run tests
+        if: matrix.configuration == 'Debug' || matrix.configuration == 'Release'
+        run: |
+          dotnet test --no-build --configuration "${{ matrix.configuration }}" --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults "${{ env.SOLUTION_FILE_PATH }}"
+
+      - name: Upload test results
+        if: (matrix.configuration == 'Debug' || matrix.configuration == 'Release') && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.configuration }}
+          path: ./TestResults/**/*.trx
+
+      - name: Upload code coverage
+        if: (matrix.configuration == 'Debug' || matrix.configuration == 'Release') && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-${{ matrix.configuration }}
+          path: ./TestResults/**/coverage.cobertura.xml
 
       - name: Setup
         working-directory: ${{ env.GITHUB_WORKSPACE }}

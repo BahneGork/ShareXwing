@@ -1,0 +1,39 @@
+{
+  "tasks": [
+    {
+      "name": "format-check",
+      "command": "dotnet",
+      "args": [
+        "format",
+        "--verify-no-changes",
+        "--verbosity",
+        "quiet"
+      ],
+      "include": ["**/*.cs"]
+    },
+    {
+      "name": "build-sharexwing",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "ShareXwing.Core/ShareXwing.Core.csproj",
+        "--configuration",
+        "Debug",
+        "--no-restore"
+      ]
+    },
+    {
+      "name": "test-sharexwing",
+      "command": "dotnet",
+      "args": [
+        "test",
+        "ShareXwing.Tests/ShareXwing.Tests.csproj",
+        "--configuration",
+        "Debug",
+        "--no-build",
+        "--verbosity",
+        "quiet"
+      ]
+    }
+  ]
+}

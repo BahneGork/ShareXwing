@@ -1,0 +1,48 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# ShareXwing pre-commit quality checks
+# Runs code formatting verification and tests on ShareXwing projects only
+
+echo "Running ShareXwing quality checks..."
+
+# Check if any ShareXwing files are staged
+if git diff --cached --name-only | grep -q "ShareXwing"; then
+    echo "ShareXwing files detected, running quality checks..."
+
+    # Verify code formatting
+    echo "Checking code formatting..."
+    dotnet format ShareXwing.Core/ShareXwing.Core.csproj --verify-no-changes --verbosity quiet
+    if [ $? -ne 0 ]; then
+        echo "❌ Code formatting issues detected. Run 'dotnet format' to fix."
+        exit 1
+    fi
+
+    dotnet format ShareXwing.Tests/ShareXwing.Tests.csproj --verify-no-changes --verbosity quiet
+    if [ $? -ne 0 ]; then
+        echo "❌ Code formatting issues detected in tests. Run 'dotnet format' to fix."
+        exit 1
+    fi
+
+    # Build ShareXwing projects
+    echo "Building ShareXwing.Core..."
+    dotnet build ShareXwing.Core/ShareXwing.Core.csproj --configuration Debug --no-restore --verbosity quiet
+    if [ $? -ne 0 ]; then
+        echo "❌ Build failed for ShareXwing.Core"
+        exit 1
+    fi
+
+    # Run ShareXwing tests
+    echo "Running ShareXwing tests..."
+    dotnet test ShareXwing.Tests/ShareXwing.Tests.csproj --configuration Debug --no-build --verbosity quiet
+    if [ $? -ne 0 ]; then
+        echo "❌ Tests failed"
+        exit 1
+    fi
+
+    echo "✅ All quality checks passed!"
+else
+    echo "No ShareXwing files changed, skipping quality checks."
+fi
+
+exit 0
