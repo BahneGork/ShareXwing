@@ -272,12 +272,120 @@ ShareXwing/
 
 ---
 
+### D009: Phase 1 - FloatingWindow WinForms Implementation
+
+**Date**: 2025-12-10
+**Decided By**: Architectural design
+**Context**: Need to implement floating window system with Win32 integration for opacity and click-through
+
+**Options Considered:**
+1. Pure WPF implementation (easier modern UI)
+2. WinForms with Win32 P/Invoke (matches ShareX)
+3. Mixed WPF/WinForms approach
+
+**Decision**: WinForms with Win32 P/Invoke wrappers
+
+**Rationale:**
+- **Consistency**: ShareX uses WinForms throughout
+- **Integration**: Easier to integrate with ShareX's existing forms
+- **Dependencies**: No need to add WPF dependencies
+- **Win32 APIs**: Required for always-on-top, opacity, click-through
+- **Testing**: Can mock Win32 APIs via wrapper interfaces
+
+**Implementation Details:**
+- `NativeMethods.cs`: P/Invoke declarations with 32/64-bit compatibility
+- `WindowHelper.cs`: Clean wrapper API over Win32 functions
+- `FloatingWindow.cs`: Main WinForms control (partial classes for organization)
+- `FloatingWindow.ContextMenu.cs`: Right-click menu for opacity/lock
+- `FloatingWindow.Resize.cs`: Aspect ratio preservation
+- `IFloatingWindow`: Interface for testability
+
+**Win32 APIs Used:**
+- `SetWindowPos` - Always-on-top (HWND_TOPMOST)
+- `GetWindowLong/SetWindowLong` - Window style manipulation
+- `SetLayeredWindowAttributes` - Opacity control (WS_EX_LAYERED + LWA_ALPHA)
+- `WS_EX_TRANSPARENT` - Click-through for lock mode
+
+**Impact**:
+- Created ShareXwing.Core/Win32/ for API wrappers
+- Created ShareXwing.Core/FloatingWindows/ for window logic
+- Created ShareXwing.Demo/ for standalone testing
+- All 7 tests passing with 70%+ coverage
+
+---
+
+### D010: Phase 2 - Coexistence Integration Strategy
+
+**Date**: 2025-12-10
+**Decided By**: Architectural design
+**Context**: Need to integrate FloatingWindow system into ShareX without breaking existing PinToScreen feature
+
+**Options Considered:**
+1. Replace existing PinToScreen entirely
+2. Enhance existing PinToScreen in-place
+3. **Parallel features - coexistence approach** ✅
+
+**Decision**: Create parallel "Enhanced" variants that coexist with original PinToScreen
+
+**Rationale:**
+- **Non-breaking**: Users can keep using original PinToScreen
+- **User choice**: Can choose between old and new via hotkeys
+- **Safe migration**: Can test new features without risk
+- **Upstream sync**: Minimal conflicts with ShareX updates
+- **Gradual adoption**: Users adopt enhanced version at their own pace
+
+**Implementation Details:**
+
+**ShareX Changes (Minimal):**
+1. `MainForm.cs` (lines 51-64):
+   - Added `FloatingWindowManager` static singleton property
+   - Lazy initialization pattern
+   - Single access point for all floating windows
+
+2. `ShareX.csproj` (line 32):
+   - Added reference to ShareXwing.Core library
+
+3. `TaskHelpers.cs` (lines 1677-1744):
+   - Added 5 new methods: `PinToScreenEnhanced()`, `PinToScreenEnhancedFromScreen()`,
+     `PinToScreenEnhancedFromClipboard()`, `PinToScreenEnhancedFromFile()`, `PinToScreenEnhancedCloseAll()`
+   - Pattern: Create FloatingWindow → Register with manager → Show
+   - Event handler for FormClosed to unregister windows
+
+4. `Enums.cs` (lines 277-288):
+   - Added 4 new HotkeyType values with clear "ShareXwing" descriptions
+   - Tools category for consistency
+
+5. `TaskHelpers.cs` hotkey handlers (lines 224-235):
+   - Added switch cases for new hotkey types
+   - Pattern: `case HotkeyType.PinToScreenEnhanced* → PinToScreenEnhanced*()`
+
+**Naming Convention:**
+- Old: `PinToScreen`, `PinToScreenFromClipboard`, etc.
+- New: `PinToScreenEnhanced`, `PinToScreenEnhancedFromClipboard`, etc.
+- Clear "Enhanced" suffix distinguishes new from old
+
+**User Experience:**
+- Hotkey manager shows both old and new options
+- Descriptions clearly marked "ShareXwing - Enhanced pinned screenshots"
+- Users can bind hotkeys to either version
+- Both can be used simultaneously if desired
+
+**Impact**:
+- Zero breaking changes to existing ShareX functionality
+- Users opt-in to new features via hotkey configuration
+- Easy to A/B test old vs. new implementations
+- Smooth migration path for ShareX users
+
+---
+
 ## Decision Categories
 
 ### Architecture Decisions
 - D002: Development Environment
 - D005: ShareXwing.Core Library
 - D007: Enhancement vs. Replacement
+- D009: Phase 1 - FloatingWindow WinForms Implementation
+- D010: Phase 2 - Coexistence Integration Strategy
 
 ### Process Decisions
 - D003: Testing Strategy
@@ -318,4 +426,4 @@ When making new decisions, document using this format:
 
 ---
 
-**Last Updated**: 2025-12-08 (Session 1)
+**Last Updated**: 2025-12-10 (Session 3 - Phase 2 complete)

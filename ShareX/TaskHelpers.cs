@@ -220,6 +220,19 @@ namespace ShareX
                 case HotkeyType.PinToScreenCloseAll:
                     PinToScreenCloseAll(safeTaskSettings);
                     break;
+                // ShareXwing: Enhanced pinned screenshots
+                case HotkeyType.PinToScreenEnhancedFromScreen:
+                    PinToScreenEnhancedFromScreen(safeTaskSettings);
+                    break;
+                case HotkeyType.PinToScreenEnhancedFromClipboard:
+                    PinToScreenEnhancedFromClipboard(safeTaskSettings);
+                    break;
+                case HotkeyType.PinToScreenEnhancedFromFile:
+                    PinToScreenEnhancedFromFile(safeTaskSettings);
+                    break;
+                case HotkeyType.PinToScreenEnhancedCloseAll:
+                    PinToScreenEnhancedCloseAll(safeTaskSettings);
+                    break;
                 case HotkeyType.ImageEditor:
                     if (!string.IsNullOrEmpty(filePath))
                     {
@@ -1670,6 +1683,75 @@ namespace ShareX
             if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
 
             PinToScreenForm.CloseAll();
+
+            PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
+        }
+
+        // ShareXwing: Enhanced pinned screenshots using FloatingWindow
+        public static void PinToScreenEnhanced(Image image, TaskSettings taskSettings = null)
+        {
+            if (image != null)
+            {
+                if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+                try
+                {
+                    var floatingWindow = new ShareXwing.Core.FloatingWindows.FloatingWindow(image.CloneSafe());
+                    MainForm.FloatingWindowManager.RegisterWindow(floatingWindow);
+
+                    // Handle window close to unregister
+                    floatingWindow.FormClosed += (s, e) =>
+                    {
+                        MainForm.FloatingWindowManager.UnregisterWindow(floatingWindow);
+                    };
+
+                    floatingWindow.Show();
+
+                    PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
+                }
+                catch (Exception ex)
+                {
+                    DebugHelper.WriteException(ex, "Error creating enhanced pinned screenshot");
+                }
+            }
+        }
+
+        public static void PinToScreenEnhancedFromScreen(TaskSettings taskSettings = null)
+        {
+            Image image = RegionCaptureTasks.GetRegionImage(out Rectangle rect);
+
+            PinToScreenEnhanced(image, taskSettings);
+        }
+
+        public static void PinToScreenEnhancedFromClipboard(TaskSettings taskSettings = null)
+        {
+            Image image = ClipboardHelpers.TryGetImage();
+
+            if (image != null)
+            {
+                PinToScreenEnhanced(image, taskSettings);
+            }
+            else
+            {
+                MessageBox.Show(Resources.ClipboardDoesNotContainAnImage, "ShareXwing - Enhanced Pin", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        public static void PinToScreenEnhancedFromFile(TaskSettings taskSettings = null)
+        {
+            Image image = ImageHelpers.LoadImageWithFileDialog();
+
+            if (image != null)
+            {
+                PinToScreenEnhanced(image, taskSettings);
+            }
+        }
+
+        public static void PinToScreenEnhancedCloseAll(TaskSettings taskSettings = null)
+        {
+            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+            MainForm.FloatingWindowManager.CloseAll();
 
             PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
         }

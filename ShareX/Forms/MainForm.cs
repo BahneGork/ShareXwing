@@ -48,6 +48,21 @@ namespace ShareX
         private ToolStripDropDownItem tsmiImageFileUploaders, tsmiTrayImageFileUploaders, tsmiTextFileUploaders, tsmiTrayTextFileUploaders;
         private ImageFilesCache actionsMenuIconCache = new ImageFilesCache();
 
+        // ShareXwing: FloatingWindowManager for enhanced pinned screenshots
+        private static ShareXwing.Core.FloatingWindows.FloatingWindowManager floatingWindowManager;
+
+        public static ShareXwing.Core.FloatingWindows.IFloatingWindowManager FloatingWindowManager
+        {
+            get
+            {
+                if (floatingWindowManager == null)
+                {
+                    floatingWindowManager = new ShareXwing.Core.FloatingWindows.FloatingWindowManager();
+                }
+                return floatingWindowManager;
+            }
+        }
+
         public MainForm()
         {
             InitializeControls();

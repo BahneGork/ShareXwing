@@ -275,6 +275,18 @@ namespace ShareX
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         PinToScreenCloseAll,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        [Description("ShareXwing - Enhanced pinned screenshots")]
+        PinToScreenEnhancedFromScreen,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        [Description("ShareXwing - Enhanced pinned screenshots")]
+        PinToScreenEnhancedFromClipboard,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        [Description("ShareXwing - Enhanced pinned screenshots")]
+        PinToScreenEnhancedFromFile,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
+        [Description("ShareXwing - Close all enhanced pinned windows")]
+        PinToScreenEnhancedCloseAll,
+        [Category(EnumExtensions.HotkeyType_Category_Tools)]
         ImageEditor,
         [Category(EnumExtensions.HotkeyType_Category_Tools)]
         ImageBeautifier,
