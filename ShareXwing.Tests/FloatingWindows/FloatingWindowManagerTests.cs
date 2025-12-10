@@ -1,3 +1,4 @@
+using System;
 using FluentAssertions;
 using ShareXwing.Core.FloatingWindows;
 using Xunit;
