@@ -32,6 +32,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShareXwing.Core", "ShareXwi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShareXwing.Tests", "ShareXwing.Tests\ShareXwing.Tests.csproj", "{B2C3D4E5-F6A7-48B9-C0D1-E2F3A4B5C6D7}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShareXwing.Demo", "ShareXwing.Demo\ShareXwing.Demo.csproj", "{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{515655AC-4716-420E-BBA9-318680DBF355}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -178,6 +180,16 @@ Global
 		{B2C3D4E5-F6A7-48B9-C0D1-E2F3A4B5C6D7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B2C3D4E5-F6A7-48B9-C0D1-E2F3A4B5C6D7}.Steam|Any CPU.ActiveCfg = Release|Any CPU
 		{B2C3D4E5-F6A7-48B9-C0D1-E2F3A4B5C6D7}.Steam|Any CPU.Build.0 = Release|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.MicrosoftStore|Any CPU.ActiveCfg = Release|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.MicrosoftStore|Any CPU.Build.0 = Release|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.MicrosoftStoreDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.MicrosoftStoreDebug|Any CPU.Build.0 = Debug|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.Steam|Any CPU.ActiveCfg = Release|Any CPU
+		{C3D4E5F6-A7B8-49C0-D1E2-F3A4B5C6D7E8}.Steam|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
