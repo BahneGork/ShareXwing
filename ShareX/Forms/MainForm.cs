@@ -63,6 +63,21 @@ namespace ShareX
             }
         }
 
+        // ShareXwing: QuickAccessManager for post-capture overlay
+        private static ShareXwing.Core.QuickAccess.QuickAccessManager quickAccessManager;
+
+        public static ShareXwing.Core.QuickAccess.IQuickAccessManager QuickAccessManager
+        {
+            get
+            {
+                if (quickAccessManager == null)
+                {
+                    quickAccessManager = new ShareXwing.Core.QuickAccess.QuickAccessManager();
+                }
+                return quickAccessManager;
+            }
+        }
+
         public MainForm()
         {
             InitializeControls();

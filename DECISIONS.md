@@ -378,6 +378,68 @@ ShareXwing/
 
 ---
 
+### D011: Phase 3 - Quick Access Overlay Design
+
+**Date**: 2025-12-10
+**Decided By**: UX design and architectural planning
+**Context**: Need a post-capture action panel that allows quick actions without disrupting workflow
+
+**Options Considered:**
+1. Full-screen modal dialog (traditional ShareX approach)
+2. Small overlay near cursor with auto-dismiss (CleanShot X style)
+3. System tray notification with buttons
+4. Sidebar panel
+
+**Decision**: Small overlay near cursor with auto-dismiss timer
+
+**Rationale:**
+- **Non-intrusive**: Appears near cursor, doesn't block screen
+- **Fast workflow**: Common actions (Copy, Pin, Upload) one click away
+- **Auto-dismiss**: Disappears after 5 seconds if not needed
+- **Hover to persist**: Mouse hover pauses auto-dismiss timer
+- **Click-outside to dismiss**: Natural dismissal behavior
+- **Familiar pattern**: Matches CleanShot X UX (user's reference)
+
+**Implementation Details:**
+
+**UI Design:**
+- 300x200px thumbnail preview
+- 6 action buttons: Copy, Save, Pin, Upload, Edit, Close
+- Semi-transparent background (95% opacity)
+- Always-on-top, no taskbar entry
+- Positioned near cursor with screen edge detection
+
+**Behavior:**
+- Auto-dismiss after 5 seconds (configurable)
+- Hover pauses timer
+- Mouse leave resumes timer
+- Click outside dismisses immediately
+- Action click executes and dismisses
+
+**Action Handlers:**
+- **Copy**: Copies image to clipboard
+- **Save**: Opens save file dialog
+- **Pin**: Creates enhanced floating window
+- **Upload**: Uploads to configured service
+- **Edit**: Opens in image editor
+- **Close**: Dismisses overlay
+
+**Integration:**
+- New AfterCaptureTasks.ShowQuickAccessOverlay flag
+- Processed in WorkerTask.cs after-capture flow
+- QuickAccessManager singleton in MainForm
+- Event-driven action handling
+
+**Impact**:
+- Created ShareXwing.Core/QuickAccess/ namespace
+- IQuickAccessOverlay and IQuickAccessManager interfaces
+- QuickAccessOverlay WinForms implementation
+- QuickAccessManager for lifecycle management
+- Integrated with ShareX after-capture workflow
+- Users can enable via Task Settings → After capture tasks
+
+---
+
 ## Decision Categories
 
 ### Architecture Decisions
@@ -386,6 +448,7 @@ ShareXwing/
 - D007: Enhancement vs. Replacement
 - D009: Phase 1 - FloatingWindow WinForms Implementation
 - D010: Phase 2 - Coexistence Integration Strategy
+- D011: Phase 3 - Quick Access Overlay Design
 
 ### Process Decisions
 - D003: Testing Strategy

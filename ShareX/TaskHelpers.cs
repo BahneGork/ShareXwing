@@ -1756,6 +1756,69 @@ namespace ShareX
             PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
         }
 
+        // ShareXwing: Quick Access Overlay - post-capture action panel
+        public static void ShowQuickAccessOverlay(Image image, TaskSettings taskSettings = null)
+        {
+            if (image != null)
+            {
+                if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+                try
+                {
+                    // Wire up overlay action handlers
+                    MainForm.QuickAccessManager.CopyRequested -= QuickAccessOverlay_CopyRequested;
+                    MainForm.QuickAccessManager.SaveRequested -= QuickAccessOverlay_SaveRequested;
+                    MainForm.QuickAccessManager.PinRequested -= QuickAccessOverlay_PinRequested;
+                    MainForm.QuickAccessManager.UploadRequested -= QuickAccessOverlay_UploadRequested;
+                    MainForm.QuickAccessManager.AnnotateRequested -= QuickAccessOverlay_AnnotateRequested;
+
+                    MainForm.QuickAccessManager.CopyRequested += QuickAccessOverlay_CopyRequested;
+                    MainForm.QuickAccessManager.SaveRequested += QuickAccessOverlay_SaveRequested;
+                    MainForm.QuickAccessManager.PinRequested += QuickAccessOverlay_PinRequested;
+                    MainForm.QuickAccessManager.UploadRequested += QuickAccessOverlay_UploadRequested;
+                    MainForm.QuickAccessManager.AnnotateRequested += QuickAccessOverlay_AnnotateRequested;
+
+                    // Show overlay
+                    MainForm.QuickAccessManager.ShowOverlay(image);
+
+                    PlayNotificationSoundAsync(NotificationSound.ActionCompleted, taskSettings);
+                }
+                catch (Exception ex)
+                {
+                    DebugHelper.WriteException(ex, "Error showing Quick Access Overlay");
+                }
+            }
+        }
+
+        private static void QuickAccessOverlay_CopyRequested(object sender, Image image)
+        {
+            ClipboardHelpers.CopyImage(image);
+        }
+
+        private static void QuickAccessOverlay_SaveRequested(object sender, Image image)
+        {
+            string filePath = ImageHelpers.SaveImageFileDialog(image);
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                image.Save(filePath);
+            }
+        }
+
+        private static void QuickAccessOverlay_PinRequested(object sender, Image image)
+        {
+            PinToScreenEnhanced(image.CloneSafe());
+        }
+
+        private static void QuickAccessOverlay_UploadRequested(object sender, Image image)
+        {
+            UploadManager.UploadImage(image);
+        }
+
+        private static void QuickAccessOverlay_AnnotateRequested(object sender, Image image)
+        {
+            AnnotateImage(image);
+        }
+
         public static EDataType FindDataType(string filePath, TaskSettings taskSettings)
         {
             if (FileHelpers.CheckExtension(filePath, taskSettings.AdvancedSettings.ImageExtensions))
@@ -1971,6 +2034,7 @@ namespace ShareX
                     case AfterCaptureTasks.ShowBeforeUploadWindow: return Resources.application__arrow;
                     case AfterCaptureTasks.UploadImageToHost: return Resources.upload_cloud;
                     case AfterCaptureTasks.DeleteFile: return Resources.bin;
+                    case AfterCaptureTasks.ShowQuickAccessOverlay: return Resources.application_text_image; // ShareXwing: Quick Access Overlay
                 }
             }
             else if (value is AfterUploadTasks afterUploadTask)

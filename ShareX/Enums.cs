@@ -150,7 +150,8 @@ namespace ShareX
         DoOCR = 1 << 17,
         ShowBeforeUploadWindow = 1 << 18,
         UploadImageToHost = 1 << 19,
-        DeleteFile = 1 << 20
+        DeleteFile = 1 << 20,
+        ShowQuickAccessOverlay = 1 << 21 // ShareXwing: Post-capture quick access panel
     }
 
     [Flags]

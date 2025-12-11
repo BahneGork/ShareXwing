@@ -619,6 +619,13 @@ namespace ShareX
                 TaskHelpers.PinToScreen(imageCopy, Info.TaskSettings);
             }
 
+            // ShareXwing: Show Quick Access Overlay after capture
+            if (Info.TaskSettings.AfterCaptureJob.HasFlag(AfterCaptureTasks.ShowQuickAccessOverlay))
+            {
+                Image imageCopy = Image.CloneSafe();
+                TaskHelpers.ShowQuickAccessOverlay(imageCopy, Info.TaskSettings);
+            }
+
             if (Info.TaskSettings.AfterCaptureJob.HasFlag(AfterCaptureTasks.SendImageToPrinter))
             {
                 TaskHelpers.PrintImage(Image);
