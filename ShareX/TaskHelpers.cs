@@ -1811,12 +1811,32 @@ namespace ShareX
 
         private static void QuickAccessOverlay_UploadRequested(object sender, Image image)
         {
-            UploadManager.UploadImage(image);
+            if (image is Bitmap bitmap)
+            {
+                UploadManager.UploadImage(bitmap);
+            }
+            else
+            {
+                using (Bitmap bmp = new Bitmap(image))
+                {
+                    UploadManager.UploadImage(bmp);
+                }
+            }
         }
 
         private static void QuickAccessOverlay_AnnotateRequested(object sender, Image image)
         {
-            AnnotateImage(image);
+            if (image is Bitmap bitmap)
+            {
+                AnnotateImageAsync(bitmap, string.Empty, TaskSettings.GetDefaultTaskSettings());
+            }
+            else
+            {
+                using (Bitmap bmp = new Bitmap(image))
+                {
+                    AnnotateImageAsync(bmp, string.Empty, TaskSettings.GetDefaultTaskSettings());
+                }
+            }
         }
 
         public static EDataType FindDataType(string filePath, TaskSettings taskSettings)
