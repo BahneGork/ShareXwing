@@ -102,6 +102,7 @@ jobs:
 
       - name: Upload artifact (Setup)
         if: matrix.configuration == 'Release'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: Setup
@@ -109,6 +110,7 @@ jobs:
 
       - name: Upload artifact (Portable)
         if: matrix.configuration == 'Release'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: Portable
@@ -116,6 +118,7 @@ jobs:
 
       - name: Upload artifact (Debug)
         if: matrix.configuration == 'Debug'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: Debug
@@ -123,6 +126,7 @@ jobs:
 
       - name: Upload artifact (Steam)
         if: matrix.configuration == 'Steam'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: Steam
@@ -130,6 +134,7 @@ jobs:
 
       - name: Upload artifact (MicrosoftStore)
         if: matrix.configuration == 'MicrosoftStore'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: MicrosoftStore
@@ -137,6 +142,7 @@ jobs:
 
       - name: Upload artifact (MicrosoftStoreDebug)
         if: matrix.configuration == 'MicrosoftStoreDebug'
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: MicrosoftStoreDebug
@@ -158,12 +164,14 @@ jobs:
 
     steps:
       - name: Download artifact (Setup)
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: Setup
           path: Output
 
       - name: Download artifact (Portable)
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: Portable
@@ -171,6 +179,7 @@ jobs:
 
       - name: Download artifact (Debug)
         if: github.ref == 'refs/heads/develop'
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: Debug
@@ -178,6 +187,7 @@ jobs:
 
       - name: Download artifact (Steam)
         if: github.ref == 'refs/heads/develop'
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: Steam
@@ -185,6 +195,7 @@ jobs:
 
       - name: Download artifact (MicrosoftStore)
         if: github.ref == 'refs/heads/develop'
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: MicrosoftStore
@@ -192,6 +203,7 @@ jobs:
 
       - name: Download artifact (MicrosoftStoreDebug)
         if: github.ref == 'refs/heads/develop'
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: MicrosoftStoreDebug
