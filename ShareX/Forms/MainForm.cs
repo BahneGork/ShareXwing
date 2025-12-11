@@ -78,6 +78,21 @@ namespace ShareX
             }
         }
 
+        // ShareXwing: CaptureSelectorManager for all-in-one capture
+        private static ShareXwing.Core.Capture.CaptureSelectorManager captureSelectorManager;
+
+        public static ShareXwing.Core.Capture.ICaptureSelectorManager CaptureSelectorManager
+        {
+            get
+            {
+                if (captureSelectorManager == null)
+                {
+                    captureSelectorManager = new ShareXwing.Core.Capture.CaptureSelectorManager();
+                }
+                return captureSelectorManager;
+            }
+        }
+
         public MainForm()
         {
             InitializeControls();

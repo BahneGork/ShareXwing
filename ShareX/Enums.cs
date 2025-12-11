@@ -235,6 +235,9 @@ namespace ShareX
         StartAutoCapture,
         [Category(EnumExtensions.HotkeyType_Category_ScreenCapture)]
         StopAutoCapture,
+        [Category(EnumExtensions.HotkeyType_Category_ScreenCapture)]
+        [Description("ShareXwing - All-in-One Capture selector")]
+        CaptureAllInOne,
         // Screen record
         [Category(EnumExtensions.HotkeyType_Category_ScreenRecord)]
         ScreenRecorder,

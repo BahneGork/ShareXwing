@@ -440,6 +440,78 @@ ShareXwing/
 
 ---
 
+### D012: Phase 4 - All-in-One Capture Design
+
+**Date**: 2025-12-11
+**Decided By**: UX design and CleanShot X inspiration
+**Context**: ShareX has many capture hotkeys, users want simplified unified capture interface
+
+**Options Considered:**
+1. Modal dialog with capture mode options
+2. Overlay menu near cursor with keyboard shortcuts (CleanShot X style)
+3. Toolbar or ribbon interface
+4. Keep existing multiple hotkeys only
+
+**Decision**: Overlay menu near cursor with keyboard shortcuts
+
+**Rationale:**
+- **Simplified UX**: One hotkey instead of remembering many
+- **Visual discovery**: See all capture options at once
+- **Keyboard-driven**: Each mode has single-letter hotkey (R, W, F, M, L, S)
+- **Mouse-friendly**: Click to select mode
+- **Quick dismissal**: ESC or click outside to cancel
+- **Non-intrusive**: Appears near cursor, auto-dismisses
+- **Familiar pattern**: Matches CleanShot X UX
+
+**Implementation Details:**
+
+**UI Design:**
+- 200px wide buttons with descriptions
+- 6 capture modes: Region, Window, Fullscreen, Active Monitor, Last Region, Scrolling
+- Dark theme (45, 45, 48) with blue accent (0, 122, 204)
+- Single-letter hotkeys shown on each button
+- Hover state for visual feedback
+- 2px blue border for visual clarity
+
+**Capture Modes:**
+- **Region (R)**: Select area to capture
+- **Window (W)**: Capture specific window
+- **Fullscreen (F)**: Entire screen
+- **Active Monitor (M)**: Current monitor only
+- **Last Region (L)**: Repeat last capture
+- **Scrolling (S)**: Long scrolling capture
+
+**Behavior:**
+- Single hotkey (CaptureAllInOne) shows selector
+- Keyboard: R/W/F/M/L/S selects mode
+- Mouse: Click button to select
+- ESC: Cancel
+- Click outside: Cancel
+- After selection: Execute capture immediately
+
+**Integration:**
+- New HotkeyType.CaptureAllInOne
+- CaptureSelectorManager singleton in MainForm
+- Event-driven mode selection
+- Maps to existing ShareX capture methods:
+  - Region → CaptureRegion(CaptureType.Region)
+  - Window → CaptureRegion(CaptureType.Window)
+  - Fullscreen → CaptureScreenshot(CaptureType.Fullscreen)
+  - ActiveMonitor → CaptureScreenshot(CaptureType.ActiveMonitor)
+  - LastRegion → CaptureLastRegion()
+  - Scrolling → OpenScrollingCapture()
+
+**Impact**:
+- Created ShareXwing.Core/Capture/ namespace
+- ICaptureSelector and ICaptureSelectorManager interfaces
+- CaptureSelector WinForms overlay implementation
+- CaptureSelectorManager for lifecycle management
+- Integrated with ShareX hotkey system
+- Users can bind CaptureAllInOne to single hotkey
+- Coexists with existing individual capture hotkeys
+
+---
+
 ## Decision Categories
 
 ### Architecture Decisions
@@ -449,6 +521,7 @@ ShareXwing/
 - D009: Phase 1 - FloatingWindow WinForms Implementation
 - D010: Phase 2 - Coexistence Integration Strategy
 - D011: Phase 3 - Quick Access Overlay Design
+- D012: Phase 4 - All-in-One Capture Design
 
 ### Process Decisions
 - D003: Testing Strategy
@@ -489,4 +562,4 @@ When making new decisions, document using this format:
 
 ---
 
-**Last Updated**: 2025-12-10 (Session 3 - Phase 2 complete)
+**Last Updated**: 2025-12-11 (Session 3 - Phase 4 complete)

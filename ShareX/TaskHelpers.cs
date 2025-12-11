@@ -147,6 +147,10 @@ namespace ShareX
                 case HotkeyType.StopAutoCapture:
                     StopAutoCapture();
                     break;
+                // ShareXwing: All-in-One Capture
+                case HotkeyType.CaptureAllInOne:
+                    ShowCaptureSelector(safeTaskSettings);
+                    break;
                 // Screen record
                 case HotkeyType.ScreenRecorder:
                     StartScreenRecording(ScreenRecordOutput.FFmpeg, ScreenRecordStartMethod.Region, safeTaskSettings);
@@ -1839,6 +1843,62 @@ namespace ShareX
             }
         }
 
+        // ShareXwing: All-in-One Capture selector
+        public static void ShowCaptureSelector(TaskSettings taskSettings = null)
+        {
+            if (taskSettings == null) taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+            try
+            {
+                // Wire up capture selector event handlers
+                MainForm.CaptureSelectorManager.CaptureModeSelected -= CaptureSelector_CaptureModeSelected;
+                MainForm.CaptureSelectorManager.SelectorCancelled -= CaptureSelector_SelectorCancelled;
+
+                MainForm.CaptureSelectorManager.CaptureModeSelected += CaptureSelector_CaptureModeSelected;
+                MainForm.CaptureSelectorManager.SelectorCancelled += CaptureSelector_SelectorCancelled;
+
+                // Show selector
+                MainForm.CaptureSelectorManager.ShowSelector();
+            }
+            catch (Exception ex)
+            {
+                DebugHelper.WriteException(ex, "Error showing Capture Selector");
+            }
+        }
+
+        private static void CaptureSelector_CaptureModeSelected(object sender, ShareXwing.Core.Capture.CaptureMode mode)
+        {
+            TaskSettings taskSettings = TaskSettings.GetDefaultTaskSettings();
+
+            switch (mode)
+            {
+                case ShareXwing.Core.Capture.CaptureMode.Region:
+                    CaptureRegion(CaptureType.Region, taskSettings);
+                    break;
+                case ShareXwing.Core.Capture.CaptureMode.Window:
+                    CaptureRegion(CaptureType.Window, taskSettings);
+                    break;
+                case ShareXwing.Core.Capture.CaptureMode.Fullscreen:
+                    CaptureScreenshot(CaptureType.Fullscreen, taskSettings);
+                    break;
+                case ShareXwing.Core.Capture.CaptureMode.ActiveMonitor:
+                    CaptureScreenshot(CaptureType.ActiveMonitor, taskSettings);
+                    break;
+                case ShareXwing.Core.Capture.CaptureMode.LastRegion:
+                    CaptureLastRegion(taskSettings);
+                    break;
+                case ShareXwing.Core.Capture.CaptureMode.ScrollingCapture:
+                    OpenScrollingCapture(taskSettings);
+                    break;
+            }
+        }
+
+        private static void CaptureSelector_SelectorCancelled(object sender, EventArgs e)
+        {
+            // User cancelled - do nothing
+            DebugHelper.WriteLine("Capture Selector cancelled by user");
+        }
+
         public static EDataType FindDataType(string filePath, TaskSettings taskSettings)
         {
             if (FileHelpers.CheckExtension(filePath, taskSettings.AdvancedSettings.ImageExtensions))
@@ -2100,6 +2160,7 @@ namespace ShareX
                     case HotkeyType.AutoCapture: return Resources.clock;
                     case HotkeyType.StartAutoCapture: return Resources.clock__arrow;
                     case HotkeyType.StopAutoCapture: return Resources.clock__minus;
+                    case HotkeyType.CaptureAllInOne: return Resources.ui_menu_blue; // ShareXwing: All-in-One Capture
                     // Screen record
                     case HotkeyType.ScreenRecorder: return Resources.camcorder_image;
                     case HotkeyType.ScreenRecorderActiveWindow: return Resources.camcorder__arrow;
