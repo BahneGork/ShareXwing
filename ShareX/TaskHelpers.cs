@@ -1873,19 +1873,19 @@ namespace ShareX
             switch (mode)
             {
                 case ShareXwing.Core.Capture.CaptureMode.Region:
-                    CaptureRegion(CaptureType.Region, taskSettings);
+                    new CaptureRegion().Capture(taskSettings);
                     break;
                 case ShareXwing.Core.Capture.CaptureMode.Window:
-                    CaptureRegion(CaptureType.Window, taskSettings);
+                    new CaptureCustomWindow().Capture(taskSettings);
                     break;
                 case ShareXwing.Core.Capture.CaptureMode.Fullscreen:
-                    CaptureScreenshot(CaptureType.Fullscreen, taskSettings);
+                    new CaptureFullscreen().Capture(taskSettings);
                     break;
                 case ShareXwing.Core.Capture.CaptureMode.ActiveMonitor:
-                    CaptureScreenshot(CaptureType.ActiveMonitor, taskSettings);
+                    new CaptureActiveMonitor().Capture(taskSettings);
                     break;
                 case ShareXwing.Core.Capture.CaptureMode.LastRegion:
-                    CaptureLastRegion(taskSettings);
+                    new CaptureLastRegion().Capture(taskSettings);
                     break;
                 case ShareXwing.Core.Capture.CaptureMode.ScrollingCapture:
                     OpenScrollingCapture(taskSettings);
