@@ -72,6 +72,10 @@ namespace ShareX
         public HotkeyType TrayLeftDoubleClickAction = HotkeyType.OpenMainWindow;
         public HotkeyType TrayMiddleClickAction = HotkeyType.ClipboardUploadWithContentViewer;
 
+        // ShareXwing: UI Modernization
+        public bool UseSimpleTrayMenu = true;      // Default to CleanShot X-style menu
+        public bool StartMinimizedToTray = true;   // Default to tray-only startup
+
         public bool AutoCheckUpdate = true;
         public UpdateChannel UpdateChannel = UpdateChannel.Release;
         // TEMP: For backward compatibility

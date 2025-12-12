@@ -93,6 +93,9 @@ namespace ShareX
             }
         }
 
+        // ShareXwing: Simplified tray menu for clean UI
+        private ShareXwing.Core.UI.ShareXwingTrayMenu simpleTrayMenu;
+
         public MainForm()
         {
             InitializeControls();
@@ -345,7 +348,26 @@ namespace ShareX
 
             await InitHotkeys();
 
+            // ShareXwing: Set up simplified tray menu if enabled
+            if (Program.Settings.UseSimpleTrayMenu)
+            {
+                SetupSimpleTrayMenu();
+            }
+
             IsReady = true;
+        }
+
+        // ShareXwing: Set up simplified CleanShot X-inspired tray menu
+        private void SetupSimpleTrayMenu()
+        {
+            simpleTrayMenu = new ShareXwing.Core.UI.ShareXwingTrayMenu(this);
+            niTray.ContextMenuStrip = simpleTrayMenu.CreateSimpleMenu();
+        }
+
+        // ShareXwing: Show full ShareX tray menu (for Advanced Features menu item)
+        public void ShowFullTrayMenu()
+        {
+            cmsTray.Show(Cursor.Position);
         }
 
         protected override void WndProc(ref Message m)
@@ -1312,7 +1334,14 @@ namespace ShareX
 
         protected override void SetVisibleCore(bool value)
         {
-            if (value && !IsHandleCreated && (Program.SilentRun || Program.Settings.SilentRun) && Program.Settings.ShowTray)
+            // ShareXwing: Start minimized to tray by default for clean UI
+            if (value && !IsHandleCreated && Program.Settings.StartMinimizedToTray && Program.Settings.ShowTray)
+            {
+                CreateHandle();
+                value = false;
+            }
+            // Fallback to original ShareX SilentRun behavior
+            else if (value && !IsHandleCreated && (Program.SilentRun || Program.Settings.SilentRun) && Program.Settings.ShowTray)
             {
                 CreateHandle();
                 value = false;
