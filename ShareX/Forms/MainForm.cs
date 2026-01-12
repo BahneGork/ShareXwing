@@ -348,6 +348,9 @@ namespace ShareX
 
             await InitHotkeys();
 
+            // ShareXwing: Add menu toggle item to full tray menu
+            AddTrayMenuToggleItem();
+
             // ShareXwing: Set up simplified tray menu if enabled
             if (Program.Settings.UseSimpleTrayMenu)
             {
@@ -355,6 +358,33 @@ namespace ShareX
             }
 
             IsReady = true;
+        }
+
+        // ShareXwing: Add toggle menu item to full tray menu
+        private void AddTrayMenuToggleItem()
+        {
+            // Find the Exit menu item to insert before it
+            int exitIndex = -1;
+            for (int i = 0; i < cmsTray.Items.Count; i++)
+            {
+                if (cmsTray.Items[i].Name == "tsmiTrayExit")
+                {
+                    exitIndex = i;
+                    break;
+                }
+            }
+
+            if (exitIndex > 0)
+            {
+                // Add separator before the toggle item
+                var separator = new ToolStripSeparator();
+                cmsTray.Items.Insert(exitIndex, separator);
+
+                // Add "Switch to Simple Menu" item
+                var switchItem = new ToolStripMenuItem("Switch to Simple Menu");
+                switchItem.Click += (sender, e) => SwitchToSimpleMenu();
+                cmsTray.Items.Insert(exitIndex + 1, switchItem);
+            }
         }
 
         // ShareXwing: Set up simplified CleanShot X-inspired tray menu
@@ -368,6 +398,22 @@ namespace ShareX
         public void ShowFullTrayMenu()
         {
             cmsTray.Show(Cursor.Position);
+        }
+
+        // ShareXwing: Switch to simplified tray menu
+        public void SwitchToSimpleMenu()
+        {
+            Program.Settings.UseSimpleTrayMenu = true;
+            SetupSimpleTrayMenu();
+            Program.Settings.Save();
+        }
+
+        // ShareXwing: Switch to full tray menu
+        public void SwitchToFullMenu()
+        {
+            Program.Settings.UseSimpleTrayMenu = false;
+            niTray.ContextMenuStrip = cmsTray;
+            Program.Settings.Save();
         }
 
         protected override void WndProc(ref Message m)

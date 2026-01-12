@@ -118,6 +118,11 @@ namespace ShareXwing.Core.UI
             settings.Click += Settings_Click;
             menu.Items.Add(settings);
 
+            // Switch to Full Menu
+            var switchToFull = new ToolStripMenuItem("Switch to Full Menu");
+            switchToFull.Click += SwitchToFullMenu_Click;
+            menu.Items.Add(switchToFull);
+
             menu.Items.Add(new ToolStripSeparator());
 
             // Quit
@@ -189,6 +194,11 @@ namespace ShareXwing.Core.UI
         private void Settings_Click(object sender, EventArgs e)
         {
             InvokeMainFormMethod("ForceActivate");
+        }
+
+        private void SwitchToFullMenu_Click(object sender, EventArgs e)
+        {
+            InvokeMainFormMethod("SwitchToFullMenu");
         }
 
         private void Quit_Click(object sender, EventArgs e)
