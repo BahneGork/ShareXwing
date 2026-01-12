@@ -1,27 +1,39 @@
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using ShareXwing.Core.Win32;
 
 namespace ShareXwing.Core.QuickAccess
 {
     /// <summary>
-    /// Quick Access Overlay - Post-capture action panel with thumbnail preview
+    /// CleanShot X-style Quick Access Overlay - Minimal post-capture card with hover buttons
     /// </summary>
     public partial class QuickAccessOverlay : Form, IQuickAccessOverlay
     {
-        private const int DefaultThumbnailWidth = 300;
-        private const int DefaultThumbnailHeight = 200;
-        private const int DefaultAutoDismissTimeout = 5000; // 5 seconds
-        private const int ButtonHeight = 40;
-        private const int ButtonSpacing = 8;
-        private const int Padding = 12;
+        private const int CardWidth = 280;
+        private const int CardHeight = 200;
+        private const int CardPadding = 12;
+        private const int CornerRadius = 16;
+        private const int ButtonSize = 36;
+        private const int PillButtonWidth = 100;
+        private const int PillButtonHeight = 36;
+        private const int PillSpacing = 8;
+        private const int DefaultAutoDismissTimeout = 8000; // 8 seconds
 
         private Image? currentImage;
-        private PictureBox? thumbnailBox;
-        private Panel? actionPanel;
+        private Image? thumbnailImage;
         private Timer? autoDismissTimer;
         private int autoDismissTimeout = DefaultAutoDismissTimeout;
+        private bool isHovering = false;
+
+        // Buttons (created on hover)
+        private Button? btnPin;
+        private Button? btnClose;
+        private Button? btnUpload;
+        private Button? btnEdit;
+        private Button? btnCopy;
+        private Button? btnSave;
 
         /// <summary>
         /// Initializes a new instance of the QuickAccessOverlay class
@@ -29,7 +41,6 @@ namespace ShareXwing.Core.QuickAccess
         public QuickAccessOverlay()
         {
             InitializeComponent();
-            InitializeOverlay();
         }
 
         /// <inheritdoc/>
@@ -77,22 +88,23 @@ namespace ShareXwing.Core.QuickAccess
             }
 
             currentImage = image;
+            thumbnailImage = CreateThumbnail(image);
 
-            // Update thumbnail
-            if (thumbnailBox != null)
-            {
-                thumbnailBox.Image = CreateThumbnail(image);
-            }
-
-            // Position overlay
-            PositionOverlay(location);
+            // Position in bottom-right corner of screen
+            PositionInCorner();
 
             // Show and activate
             base.Show();
             WindowHelper.SetTopMost(Handle, true);
 
+            // Enable drag-and-drop
+            AllowDrop = false; // We're dragging FROM this window, not TO it
+            MouseDown += Thumbnail_MouseDown;
+
             // Start auto-dismiss timer
             ResetAutoDismissTimer();
+
+            Invalidate();
         }
 
         /// <inheritdoc/>
@@ -101,6 +113,10 @@ namespace ShareXwing.Core.QuickAccess
             StopAutoDismissTimer();
             base.Hide();
             Closed?.Invoke(this, EventArgs.Empty);
+
+            // Cleanup
+            thumbnailImage?.Dispose();
+            thumbnailImage = null;
         }
 
         /// <summary>
@@ -112,251 +128,342 @@ namespace ShareXwing.Core.QuickAccess
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.Manual;
-            BackColor = Color.FromArgb(240, 240, 240);
-            Opacity = 0.95;
-            Size = new Size(DefaultThumbnailWidth + (Padding * 2), DefaultThumbnailHeight + ButtonHeight + (Padding * 3) + ButtonSpacing);
+            BackColor = Color.White;
+            Size = new Size(CardWidth, CardHeight);
+            DoubleBuffered = true;
 
-            // Thumbnail picture box
-            thumbnailBox = new PictureBox
-            {
-                Location = new Point(Padding, Padding),
-                Size = new Size(DefaultThumbnailWidth, DefaultThumbnailHeight),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                BackColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-            Controls.Add(thumbnailBox);
-
-            // Action panel
-            actionPanel = new Panel
-            {
-                Location = new Point(Padding, thumbnailBox.Bottom + ButtonSpacing),
-                Size = new Size(DefaultThumbnailWidth, ButtonHeight),
-                BackColor = Color.Transparent
-            };
-            Controls.Add(actionPanel);
-
-            // Create action buttons
-            CreateActionButtons();
+            // Rounded corners region
+            Region = CreateRoundedRegion();
 
             // Auto-dismiss timer
             autoDismissTimer = new Timer
             {
-                Interval = DefaultAutoDismissTimeout
+                Interval = DefaultAutoDismissTimeout,
+                Enabled = false
             };
             autoDismissTimer.Tick += AutoDismissTimer_Tick;
 
             // Mouse events for hover detection
-            MouseEnter += QuickAccessOverlay_MouseEnter;
-            MouseLeave += QuickAccessOverlay_MouseLeave;
-            thumbnailBox.MouseEnter += QuickAccessOverlay_MouseEnter;
-            thumbnailBox.MouseLeave += QuickAccessOverlay_MouseLeave;
-            actionPanel.MouseEnter += QuickAccessOverlay_MouseEnter;
-            actionPanel.MouseLeave += QuickAccessOverlay_MouseLeave;
+            MouseEnter += Overlay_MouseEnter;
+            MouseLeave += Overlay_MouseLeave;
 
-            // Deactivate event for click-outside-to-dismiss
-            Deactivate += QuickAccessOverlay_Deactivate;
+            // Paint event for custom drawing
+            Paint += Overlay_Paint;
+
+            // Create buttons (hidden by default)
+            CreateButtons();
         }
 
         /// <summary>
-        /// Initializes the overlay after components are created
+        /// Creates all buttons (corner + center pills)
         /// </summary>
-        private void InitializeOverlay()
+        private void CreateButtons()
         {
-            // Additional initialization if needed
+            // Top-left: Pin
+            btnPin = CreateCornerButton("📌", CardPadding, CardPadding);
+            btnPin.Click += (s, e) => PinClicked?.Invoke(this, EventArgs.Empty);
+
+            // Top-right: Close
+            btnClose = CreateCornerButton("✕", CardWidth - ButtonSize - CardPadding, CardPadding);
+            btnClose.Click += (s, e) => Hide();
+
+            // Bottom-left: Upload
+            btnUpload = CreateCornerButton("☁", CardPadding, CardHeight - ButtonSize - CardPadding);
+            btnUpload.Click += (s, e) => UploadClicked?.Invoke(this, EventArgs.Empty);
+
+            // Bottom-right: Edit
+            btnEdit = CreateCornerButton("✏", CardWidth - ButtonSize - CardPadding, CardHeight - ButtonSize - CardPadding);
+            btnEdit.Click += (s, e) => AnnotateClicked?.Invoke(this, EventArgs.Empty);
+
+            // Center: Copy (top)
+            int centerX = (CardWidth - PillButtonWidth) / 2;
+            int centerY = (CardHeight - (PillButtonHeight * 2 + PillSpacing)) / 2;
+            btnCopy = CreatePillButton("Copy", centerX, centerY);
+            btnCopy.Click += (s, e) => CopyClicked?.Invoke(this, EventArgs.Empty);
+
+            // Center: Save (bottom)
+            btnSave = CreatePillButton("Save", centerX, centerY + PillButtonHeight + PillSpacing);
+            btnSave.Click += (s, e) => SaveClicked?.Invoke(this, EventArgs.Empty);
+
+            // All buttons start hidden
+            HideAllButtons();
         }
 
         /// <summary>
-        /// Creates the action buttons
+        /// Creates a circular corner button
         /// </summary>
-        private void CreateActionButtons()
+        private Button CreateCornerButton(string text, int x, int y)
         {
-            if (actionPanel == null) return;
-
-            int buttonWidth = 50;
-            int x = 0;
-
-            // Copy button
-            var copyButton = CreateButton("Copy", x);
-            copyButton.Click += (s, e) => CopyClicked?.Invoke(this, EventArgs.Empty);
-            actionPanel.Controls.Add(copyButton);
-            x += buttonWidth + ButtonSpacing;
-
-            // Save button
-            var saveButton = CreateButton("Save", x);
-            saveButton.Click += (s, e) => SaveClicked?.Invoke(this, EventArgs.Empty);
-            actionPanel.Controls.Add(saveButton);
-            x += buttonWidth + ButtonSpacing;
-
-            // Pin button
-            var pinButton = CreateButton("Pin", x);
-            pinButton.Click += (s, e) => PinClicked?.Invoke(this, EventArgs.Empty);
-            actionPanel.Controls.Add(pinButton);
-            x += buttonWidth + ButtonSpacing;
-
-            // Upload button
-            var uploadButton = CreateButton("Upload", x);
-            uploadButton.Click += (s, e) => UploadClicked?.Invoke(this, EventArgs.Empty);
-            actionPanel.Controls.Add(uploadButton);
-            x += buttonWidth + ButtonSpacing;
-
-            // Annotate button
-            var annotateButton = CreateButton("Edit", x);
-            annotateButton.Click += (s, e) => AnnotateClicked?.Invoke(this, EventArgs.Empty);
-            actionPanel.Controls.Add(annotateButton);
-            x += buttonWidth + ButtonSpacing;
-
-            // Close button
-            var closeButton = CreateButton("✕", x);
-            closeButton.Click += (s, e) => Hide();
-            actionPanel.Controls.Add(closeButton);
-        }
-
-        /// <summary>
-        /// Creates a button with consistent styling
-        /// </summary>
-        private Button CreateButton(string text, int x)
-        {
-            return new Button
+            var btn = new Button
             {
                 Text = text,
-                Location = new Point(x, 0),
-                Size = new Size(50, ButtonHeight),
+                Location = new Point(x, y),
+                Size = new Size(ButtonSize, ButtonSize),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(60, 60, 60),
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(52, 152, 219),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
-                Cursor = Cursors.Hand
+                Font = new Font("Segoe UI", 14),
+                Cursor = Cursors.Hand,
+                Visible = false
             };
+
+            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 240, 240);
+
+            // Make it circular
+            GraphicsPath path = new GraphicsPath();
+            path.AddEllipse(0, 0, ButtonSize, ButtonSize);
+            btn.Region = new Region(path);
+
+            Controls.Add(btn);
+            btn.BringToFront();
+
+            return btn;
         }
 
         /// <summary>
-        /// Creates a thumbnail of the given image
+        /// Creates a pill-shaped center button
+        /// </summary>
+        private Button CreatePillButton(string text, int x, int y)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Location = new Point(x, y),
+                Size = new Size(PillButtonWidth, PillButtonHeight),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(60, 60, 60),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 11, FontStyle.Regular),
+                Cursor = Cursors.Hand,
+                Visible = false
+            };
+
+            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 240, 240);
+
+            // Make it pill-shaped (rounded ends)
+            GraphicsPath path = new GraphicsPath();
+            int radius = PillButtonHeight / 2;
+            path.AddArc(0, 0, radius * 2, radius * 2, 90, 180);
+            path.AddArc(PillButtonWidth - radius * 2, 0, radius * 2, radius * 2, 270, 180);
+            path.CloseFigure();
+            btn.Region = new Region(path);
+
+            Controls.Add(btn);
+            btn.BringToFront();
+
+            return btn;
+        }
+
+        /// <summary>
+        /// Custom paint for rounded card with thumbnail
+        /// </summary>
+        private void Overlay_Paint(object? sender, PaintEventArgs e)
+        {
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
+            // Draw thumbnail
+            if (thumbnailImage != null)
+            {
+                // If hovering, draw darkened version
+                if (isHovering)
+                {
+                    // Draw thumbnail
+                    g.DrawImage(thumbnailImage, 0, 0, CardWidth, CardHeight);
+
+                    // Darken overlay
+                    using (SolidBrush darkBrush = new SolidBrush(Color.FromArgb(100, 0, 0, 0)))
+                    {
+                        g.FillRectangle(darkBrush, 0, 0, CardWidth, CardHeight);
+                    }
+                }
+                else
+                {
+                    // Normal thumbnail
+                    g.DrawImage(thumbnailImage, 0, 0, CardWidth, CardHeight);
+                }
+            }
+
+            // Draw shadow effect (optional - would need to be drawn BEFORE the form region)
+        }
+
+        /// <summary>
+        /// Creates rounded rectangle region for the form
+        /// </summary>
+        private Region CreateRoundedRegion()
+        {
+            GraphicsPath path = new GraphicsPath();
+            path.AddArc(0, 0, CornerRadius * 2, CornerRadius * 2, 180, 90);
+            path.AddArc(CardWidth - CornerRadius * 2, 0, CornerRadius * 2, CornerRadius * 2, 270, 90);
+            path.AddArc(CardWidth - CornerRadius * 2, CardHeight - CornerRadius * 2, CornerRadius * 2, CornerRadius * 2, 0, 90);
+            path.AddArc(0, CardHeight - CornerRadius * 2, CornerRadius * 2, CornerRadius * 2, 90, 90);
+            path.CloseFigure();
+            return new Region(path);
+        }
+
+        /// <summary>
+        /// Creates thumbnail from full image
         /// </summary>
         private Image CreateThumbnail(Image image)
         {
-            if (image == null) throw new ArgumentNullException(nameof(image));
-
-            // Calculate aspect-ratio-preserving size
-            double imageAspect = (double)image.Width / image.Height;
-            double thumbAspect = (double)DefaultThumbnailWidth / DefaultThumbnailHeight;
-
-            int thumbWidth, thumbHeight;
-            if (imageAspect > thumbAspect)
+            Bitmap thumbnail = new Bitmap(CardWidth, CardHeight);
+            using (Graphics g = Graphics.FromImage(thumbnail))
             {
-                // Image is wider than thumbnail
-                thumbWidth = DefaultThumbnailWidth;
-                thumbHeight = (int)(DefaultThumbnailWidth / imageAspect);
-            }
-            else
-            {
-                // Image is taller than thumbnail
-                thumbHeight = DefaultThumbnailHeight;
-                thumbWidth = (int)(DefaultThumbnailHeight * imageAspect);
-            }
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            var thumbnail = new Bitmap(thumbWidth, thumbHeight);
-            using (var graphics = Graphics.FromImage(thumbnail))
-            {
-                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                graphics.DrawImage(image, 0, 0, thumbWidth, thumbHeight);
-            }
+                // Calculate aspect ratio scaling
+                float imgAspect = (float)image.Width / image.Height;
+                float cardAspect = (float)CardWidth / CardHeight;
 
+                Rectangle destRect;
+                if (imgAspect > cardAspect)
+                {
+                    // Image is wider - fit to width
+                    int scaledHeight = (int)(CardWidth / imgAspect);
+                    int offsetY = (CardHeight - scaledHeight) / 2;
+                    destRect = new Rectangle(0, offsetY, CardWidth, scaledHeight);
+                }
+                else
+                {
+                    // Image is taller - fit to height
+                    int scaledWidth = (int)(CardHeight * imgAspect);
+                    int offsetX = (CardWidth - scaledWidth) / 2;
+                    destRect = new Rectangle(offsetX, 0, scaledWidth, CardHeight);
+                }
+
+                g.DrawImage(image, destRect);
+            }
             return thumbnail;
         }
 
         /// <summary>
-        /// Positions the overlay at the specified location with screen edge detection
+        /// Positions overlay in bottom-right corner of screen
         /// </summary>
-        private void PositionOverlay(Point location)
+        private void PositionInCorner()
         {
-            // Get screen bounds
-            Screen screen = Screen.FromPoint(location);
-            Rectangle screenBounds = screen.WorkingArea;
+            Screen screen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
+            Rectangle workingArea = screen.WorkingArea;
 
-            // Calculate position (default: bottom-right of cursor)
-            int x = location.X + 20;
-            int y = location.Y + 20;
-
-            // Check right edge
-            if (x + Width > screenBounds.Right)
-            {
-                x = location.X - Width - 20;
-            }
-
-            // Check bottom edge
-            if (y + Height > screenBounds.Bottom)
-            {
-                y = location.Y - Height - 20;
-            }
-
-            // Check left edge
-            if (x < screenBounds.Left)
-            {
-                x = screenBounds.Left + 10;
-            }
-
-            // Check top edge
-            if (y < screenBounds.Top)
-            {
-                y = screenBounds.Top + 10;
-            }
+            int margin = 20;
+            int x = workingArea.Right - CardWidth - margin;
+            int y = workingArea.Bottom - CardHeight - margin;
 
             Location = new Point(x, y);
         }
 
         /// <summary>
-        /// Resets the auto-dismiss timer
+        /// Mouse enter - show buttons
         /// </summary>
-        private void ResetAutoDismissTimer()
+        private void Overlay_MouseEnter(object? sender, EventArgs e)
         {
-            if (autoDismissTimer == null || autoDismissTimeout <= 0) return;
-
-            autoDismissTimer.Stop();
-            autoDismissTimer.Start();
+            isHovering = true;
+            ShowAllButtons();
+            Invalidate();
+            ResetAutoDismissTimer();
         }
 
         /// <summary>
-        /// Stops the auto-dismiss timer
+        /// Mouse leave - hide buttons
+        /// </summary>
+        private void Overlay_MouseLeave(object? sender, EventArgs e)
+        {
+            // Check if mouse actually left (not just moved to a button)
+            if (!ClientRectangle.Contains(PointToClient(Cursor.Position)))
+            {
+                isHovering = false;
+                HideAllButtons();
+                Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Show all buttons
+        /// </summary>
+        private void ShowAllButtons()
+        {
+            btnPin!.Visible = true;
+            btnClose!.Visible = true;
+            btnUpload!.Visible = true;
+            btnEdit!.Visible = true;
+            btnCopy!.Visible = true;
+            btnSave!.Visible = true;
+        }
+
+        /// <summary>
+        /// Hide all buttons
+        /// </summary>
+        private void HideAllButtons()
+        {
+            btnPin!.Visible = false;
+            btnClose!.Visible = false;
+            btnUpload!.Visible = false;
+            btnEdit!.Visible = false;
+            btnCopy!.Visible = false;
+            btnSave!.Visible = false;
+        }
+
+        /// <summary>
+        /// Start drag-and-drop from thumbnail
+        /// </summary>
+        private void Thumbnail_MouseDown(object? sender, MouseEventArgs e)
+        {
+            // Only drag if not clicking on a button
+            if (e.Button == MouseButtons.Left && !isHovering)
+            {
+                if (currentImage != null)
+                {
+                    // Start drag-and-drop operation
+                    DataObject data = new DataObject();
+                    data.SetData(DataFormats.Bitmap, currentImage);
+                    DoDragDrop(data, DragDropEffects.Copy);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Auto-dismiss timer tick
+        /// </summary>
+        private void AutoDismissTimer_Tick(object? sender, EventArgs e)
+        {
+            if (!isHovering)
+            {
+                Hide();
+            }
+        }
+
+        /// <summary>
+        /// Reset auto-dismiss timer
+        /// </summary>
+        private void ResetAutoDismissTimer()
+        {
+            if (autoDismissTimer != null && autoDismissTimeout > 0)
+            {
+                autoDismissTimer.Stop();
+                autoDismissTimer.Start();
+            }
+        }
+
+        /// <summary>
+        /// Stop auto-dismiss timer
         /// </summary>
         private void StopAutoDismissTimer()
         {
             autoDismissTimer?.Stop();
         }
 
-        private void AutoDismissTimer_Tick(object? sender, EventArgs e)
-        {
-            Hide();
-        }
-
-        private void QuickAccessOverlay_MouseEnter(object? sender, EventArgs e)
-        {
-            // Stop auto-dismiss when hovering
-            StopAutoDismissTimer();
-        }
-
-        private void QuickAccessOverlay_MouseLeave(object? sender, EventArgs e)
-        {
-            // Restart auto-dismiss when leaving
-            ResetAutoDismissTimer();
-        }
-
-        private void QuickAccessOverlay_Deactivate(object? sender, EventArgs e)
-        {
-            // Hide when clicking outside (user clicked somewhere else)
-            Hide();
-        }
-
         /// <summary>
-        /// Disposes resources used by the overlay
+        /// Clean up resources
         /// </summary>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
                 autoDismissTimer?.Dispose();
-                thumbnailBox?.Image?.Dispose();
-                currentImage?.Dispose();
+                thumbnailImage?.Dispose();
             }
             base.Dispose(disposing);
         }
